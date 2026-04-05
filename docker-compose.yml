@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ../TodoListPlus-Front
+    container_name: todo-front
+    ports:
+      - "3000:3000"
+    volumes:
+      # ホストのフロントエンドソースをコンテナにマウント
+      - ../TodoListPlus-Front:/app
+      # node_modulesをコンテナ側に保持（ホストのnode_modulesは無視）
+      - /app/node_modules
+    working_dir: /app
+    command: npm run dev
+    depends_on:
+      - backend
+    # networks:
+    #   - todo-net
+      
+  backend:
+    build: ../TodoListPlus-Back
+    container_name: todo-back
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../TodoListPlus-Back:/app
+      - maven-repo:/root/.m2
+    command: ./mvnw spring-boot:run
+    # environment:
+    #   SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/sample_schema?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tokyo
+    #   SPRING_DATASOURCE_USERNAME: user
+    #   SPRING_DATASOURCE_PASSWORD: pass
+    depends_on:
+      - db
+    # networks:
+    #   - todo-net
+
+  db:
+    image: mysql:8.0
+    container_name: todo-mysql
+    # restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=sample_schema
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      # 永続化用のマウント先
+      - ./mysql_data:/var/lib/mysql
+      # 初期データ
+      # - ./initdb.d:/docker-entrypoint-initdb.d
+    # healthcheck:
+    #   test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 30s
+
+# networks:
+#   todo-net:
+
+volumes:
+  db_data:
+  maven-repo:
